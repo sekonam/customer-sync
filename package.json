@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "start:app": "node dist/app.js",
+    "start:sync": "node dist/sync.js",
+    "format": "prettier --write \"src/**/*.ts\""
   },
   "keywords": [],
   "author": "",
