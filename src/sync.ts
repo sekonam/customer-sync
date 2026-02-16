@@ -59,10 +59,7 @@ function anonymizeCustomer(customer: Customer): Customer {
   };
 }
 
-async function insertBatch(
-  collection: any,
-  batch: Customer[]
-): Promise<void> {
+async function insertBatch(collection: any, batch: Customer[]): Promise<void> {
   if (batch.length === 0) return;
 
   try {
@@ -73,7 +70,7 @@ async function insertBatch(
           replacement: doc,
           upsert: true,
         },
-      }))
+      })),
     );
     console.log(`Inserted/updated ${batch.length} anonymized customers`);
   } catch (error) {
@@ -154,7 +151,7 @@ async function realtimeSync(client: MongoClient): Promise<void> {
       await resumeTokenCollection.updateOne(
         { _id: "sync_resume_token" },
         { $set: { token: currentResumeToken } },
-        { upsert: true }
+        { upsert: true },
       );
     }
   };
@@ -182,15 +179,9 @@ async function realtimeSync(client: MongoClient): Promise<void> {
 
       if (change.operationType === "insert" && change.fullDocument) {
         customer = change.fullDocument;
-      } else if (
-        change.operationType === "update" &&
-        change.fullDocument
-      ) {
+      } else if (change.operationType === "update" && change.fullDocument) {
         customer = change.fullDocument;
-      } else if (
-        change.operationType === "replace" &&
-        change.fullDocument
-      ) {
+      } else if (change.operationType === "replace" && change.fullDocument) {
         customer = change.fullDocument;
       }
 
