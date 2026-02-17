@@ -8,7 +8,11 @@
     "start:sync": "node dist/sync.js",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint \"src/**/*.ts\"",
-    "lint:fix": "eslint \"src/**/*.ts\" --fix"
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
+    "test": "jest --config jest.config.ts",
+    "test:unit": "jest --config jest.config.ts tests/unit",
+    "test:e2e": "jest --config jest-e2e.config.ts tests/e2e",
+    "test:coverage": "jest --config jest.config.ts --coverage"
   },
   "keywords": [],
   "author": "",
@@ -21,10 +25,15 @@
     "typescript": "^5.9.3"
   },
   "devDependencies": {
+    "@shelf/jest-mongodb": "^6.0.2",
+    "@types/jest": "^30.0.0",
     "@types/node": "^25.3.0",
     "@typescript-eslint/eslint-plugin": "^8.56.0",
     "@typescript-eslint/parser": "^8.56.0",
     "eslint": "^9.39.2",
-    "prettier": "^3.8.1"
+    "jest": "^30.2.0",
+    "prettier": "^3.8.1",
+    "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2"
   }
 }
