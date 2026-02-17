@@ -1,0 +1,14 @@
+# Docker-specific .dockerignore
+node_modules
+dist
+npm-debug.log
+.env
+.git
+.gitignore
+tests
+coverage
+*.md
+.eslintrc*
+eslint.config.mjs
+jest*.config.ts
+tsconfig.json

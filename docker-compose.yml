@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: backend_test_mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: backend_test
+    volumes:
+      - mongodb_data:/data/db
+      - ./docker/mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    healthcheck:
+      test: |
+        mongosh --eval "
+          try {
+            rs.status();
+          } catch(e) {
+            rs.initiate({
+              _id: 'rs0',
+              members: [{ _id: 0, host: 'mongodb:27017' }]
+            });
+          }
+        "
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  app:
+    build: .
+    container_name: backend_test_app
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      DB_URI: mongodb://mongodb:27017/backend_test
+    command: ["node", "dist/app.js"]
+
+  sync:
+    build: .
+    container_name: backend_test_sync
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      DB_URI: mongodb://mongodb:27017/backend_test
+    command: ["node", "dist/sync.js"]
+
+volumes:
+  mongodb_data:
