@@ -11,11 +11,39 @@ The project consists of two main applications:
 
 ## Requirements
 
-- Node.js (v16 or higher)
-- MongoDB (local or remote instance)
-- npm or yarn package manager
+- **For Docker (Recommended):**
+  - Docker
+  - Docker Compose
 
-## Installation
+- **For Local Development:**
+  - Node.js (v16 or higher)
+  - MongoDB (with replica set enabled)
+  - npm package manager
+
+## Quick Start with Docker Compose
+
+The easiest way to run the project is using Docker Compose:
+
+```bash
+# Start all services (MongoDB + app + sync)
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+
+# Stop and remove volumes (clean slate)
+docker-compose down -v
+```
+
+This will start:
+- MongoDB with replica set enabled on port 27017
+- Customer generator (app)
+- Synchronization service (sync)
+
+## Local Installation
 
 1. Clone the repository:
 ```bash
@@ -38,6 +66,13 @@ Edit the `.env` file and set the `DB_URI` variable to your MongoDB connection st
 DB_URI=mongodb://localhost:27017/backend_test
 ```
 
+**Important:** MongoDB Change Streams require a replica set. For local development:
+```bash
+mongod --replSet rs0 --port 27017
+# In another terminal:
+mongosh --eval "rs.initiate()"
+```
+
 4. Build the project:
 ```bash
 npm run build
@@ -45,7 +80,28 @@ npm run build
 
 ## Usage
 
-### Running the Customer Generator (app.ts)
+### Running with Docker Compose
+
+```bash
+# Start all services
+docker-compose up -d
+
+# View app logs
+docker-compose logs -f app
+
+# View sync logs
+docker-compose logs -f sync
+
+# Restart sync service
+docker-compose restart sync
+
+# Run full reindex
+docker-compose run --rm sync node dist/sync.js --full-reindex
+```
+
+### Running Locally
+
+#### Customer Generator (app.ts)
 
 This application continuously generates and inserts customer records into the `customers` collection:
 
@@ -55,11 +111,11 @@ npm run start:app
 
 The generator creates random batches of 1-10 customers every 200 milliseconds. Press `Ctrl+C` to stop the application.
 
-### Running the Synchronization Service (sync.ts)
+#### Synchronization Service (sync.ts)
 
 The sync service operates in two modes:
 
-#### Real-time Synchronization (Default)
+**Real-time Synchronization (Default):**
 
 Monitors the `customers` collection for new and updated documents and synchronizes them to `customers_anonymised`:
 
@@ -74,7 +130,7 @@ Features:
 - Stores resume tokens to continue from the last position after restart
 - Handles graceful shutdown with `Ctrl+C`
 
-#### Full Reindex Mode
+**Full Reindex Mode:**
 
 Processes all existing documents in the `customers` collection and copies them to `customers_anonymised`:
 
@@ -158,12 +214,26 @@ Internal collection used by the sync service to store resume tokens for change s
 ```
 backend_test/
 ├── src/
+│   ├── anonymizer.ts   # Anonymization functions (testable module)
 │   ├── app.ts          # Customer data generator
 │   └── sync.ts         # Synchronization service
+├── tests/
+│   ├── unit/           # Unit tests
+│   │   └── anonymizer.test.ts
+│   └── e2e/            # End-to-end tests
+│       └── sync.test.ts
+├── docker/
+│   └── mongo-init.sh   # MongoDB initialization script
 ├── dist/               # Compiled JavaScript files (generated)
 ├── .env                # Environment configuration (not in git)
 ├── .env.example        # Example environment configuration
+├── .dockerignore       # Docker ignore rules
 ├── .gitignore          # Git ignore rules
+├── Dockerfile          # Docker image definition
+├── docker-compose.yml  # Docker Compose configuration
+├── eslint.config.mjs   # ESLint configuration
+├── jest.config.ts      # Jest configuration for unit tests
+├── jest-e2e.config.ts  # Jest configuration for e2e tests
 ├── package.json        # Project dependencies and scripts
 ├── tsconfig.json       # TypeScript configuration
 └── README.md           # This file
@@ -174,13 +244,76 @@ backend_test/
 ### Build Scripts
 
 - `npm run build` - Compile TypeScript to JavaScript
-- `npm run format` - Format code using Prettier
+- `npm run format` - Format code using Prettier (default config)
+- `npm run lint` - Lint code with ESLint
+- `npm run lint:fix` - Lint and auto-fix issues
 - `npm run start:app` - Run the customer generator
 - `npm run start:sync` - Run the sync service
+- `npm run test` - Run all tests
+- `npm run test:unit` - Run unit tests only
+- `npm run test:e2e` - Run e2e tests (requires MongoDB running)
+- `npm run test:coverage` - Run tests with coverage report
 
-### Code Formatting
+### Code Quality
 
-The project uses Prettier with default configuration. Run `npm run format` before committing changes.
+The project uses:
+- **ESLint** with TypeScript rules (no rule exceptions)
+- **Prettier** with default configuration
+- **Jest** for unit and e2e testing
+
+Run before committing:
+```bash
+npm run lint
+npm run format
+npm run test:unit
+```
+
+### Running Tests
+
+**Unit Tests:**
+```bash
+npm run test:unit
+```
+
+Unit tests cover the anonymization logic and don't require a database.
+
+**E2E Tests:**
+
+E2E tests require a real MongoDB instance with replica set enabled.
+
+Using Docker:
+```bash
+# Start MongoDB
+docker-compose up -d mongodb
+
+# Run e2e tests
+npm run test:e2e
+
+# Clean up
+docker-compose down
+```
+
+Using local MongoDB:
+```bash
+# Start MongoDB with replica set
+mongod --replSet rs0 --port 27017
+
+# In another terminal, initialize replica set
+mongosh --eval "rs.initiate()"
+
+# Run e2e tests
+npm run test:e2e
+```
+
+### Building Docker Images
+
+```bash
+# Build the image
+docker build -t backend-test .
+
+# Or build with docker-compose
+docker-compose build
+```
 
 ## Troubleshooting
 
@@ -188,20 +321,53 @@ The project uses Prettier with default configuration. Run `npm run format` befor
 
 If you encounter MongoDB connection errors, verify:
 - MongoDB is running and accessible
-- The `DB_URI` in `.env` is correct
+- The `DB_URI` in `.env` is correct (or environment variable in Docker)
 - Network connectivity to the MongoDB instance
+- **Replica set is initialized** (required for Change Streams)
+
+#### Checking Replica Set Status:
+```bash
+# Using Docker Compose
+docker-compose exec mongodb mongosh --eval "rs.status()"
+
+# Using local MongoDB
+mongosh --eval "rs.status()"
+```
 
 ### Resume Token Issues
 
 If the sync service fails to resume from the last position:
 - Check the `resume_tokens` collection for the stored token
 - In case of corruption, delete the document with `_id: "sync_resume_token"` to start fresh
+```bash
+mongosh backend_test --eval 'db.resume_tokens.deleteMany({})'
+```
 
 ### Performance Considerations
 
 - The customer generator can be CPU and I/O intensive; adjust the batch size or interval if needed
-- MongoDB Change Streams require a replica set; use `mongod --replSet rs0` for local development
+- MongoDB Change Streams require a replica set; the docker-compose setup handles this automatically
 - Large collections may take time to reindex; monitor progress through console output
+
+### Docker Issues
+
+If containers fail to start:
+```bash
+# Check logs
+docker-compose logs
+
+# Restart services
+docker-compose restart
+
+# Clean restart
+docker-compose down -v
+docker-compose up -d
+```
+
+If MongoDB health check fails:
+- Wait 30-60 seconds for replica set initialization
+- Check MongoDB logs: `docker-compose logs mongodb`
+- Verify replica set: `docker-compose exec mongodb mongosh --eval "rs.status()"`
 
 ## License
 
