@@ -1,11 +1,17 @@
-import { MongoClient, ChangeStreamDocument, ResumeToken } from "mongodb";
+import {
+  MongoClient,
+  ChangeStreamDocument,
+  ResumeToken,
+  ObjectId,
+  Collection,
+} from "mongodb";
 import * as dotenv from "dotenv";
 import * as crypto from "crypto";
 
 dotenv.config();
 
 interface Customer {
-  _id: any;
+  _id: ObjectId;
   firstName: string;
   lastName: string;
   email: string;
@@ -59,7 +65,10 @@ function anonymizeCustomer(customer: Customer): Customer {
   };
 }
 
-async function insertBatch(collection: any, batch: Customer[]): Promise<void> {
+async function insertBatch(
+  collection: Collection<Customer>,
+  batch: Customer[],
+): Promise<void> {
   if (batch.length === 0) return;
 
   try {
@@ -161,8 +170,8 @@ async function realtimeSync(client: MongoClient): Promise<void> {
       clearTimeout(batchTimer);
     }
 
-    batchTimer = setTimeout(async () => {
-      await flushBatch(currentResumeToken);
+    batchTimer = setTimeout(() => {
+      void flushBatch(currentResumeToken);
     }, BATCH_TIMEOUT);
   };
 
@@ -173,31 +182,33 @@ async function realtimeSync(client: MongoClient): Promise<void> {
     resumeAfter: resumeAfter,
   });
 
-  changeStream.on("change", async (change: ChangeStreamDocument<Customer>) => {
-    try {
-      let customer: Customer | null = null;
+  changeStream.on("change", (change: ChangeStreamDocument<Customer>) => {
+    void (async () => {
+      try {
+        let customer: Customer | null = null;
 
-      if (change.operationType === "insert" && change.fullDocument) {
-        customer = change.fullDocument;
-      } else if (change.operationType === "update" && change.fullDocument) {
-        customer = change.fullDocument;
-      } else if (change.operationType === "replace" && change.fullDocument) {
-        customer = change.fullDocument;
-      }
-
-      if (customer) {
-        const anonymized = anonymizeCustomer(customer);
-        batch.push(anonymized);
-
-        if (batch.length >= BATCH_SIZE) {
-          await flushBatch(change._id);
-        } else {
-          resetBatchTimer(change._id);
+        if (change.operationType === "insert" && change.fullDocument) {
+          customer = change.fullDocument;
+        } else if (change.operationType === "update" && change.fullDocument) {
+          customer = change.fullDocument;
+        } else if (change.operationType === "replace" && change.fullDocument) {
+          customer = change.fullDocument;
         }
+
+        if (customer) {
+          const anonymized = anonymizeCustomer(customer);
+          batch.push(anonymized);
+
+          if (batch.length >= BATCH_SIZE) {
+            await flushBatch(change._id);
+          } else {
+            resetBatchTimer(change._id);
+          }
+        }
+      } catch (error) {
+        console.error("Error processing change:", error);
       }
-    } catch (error) {
-      console.error("Error processing change:", error);
-    }
+    })();
   });
 
   changeStream.on("error", (error) => {
@@ -206,13 +217,15 @@ async function realtimeSync(client: MongoClient): Promise<void> {
   });
 
   // Handle graceful shutdown
-  process.on("SIGINT", async () => {
-    console.log("\nShutting down gracefully...");
-    const lastResumeToken = changeStream.resumeToken;
-    await flushBatch(lastResumeToken || undefined);
-    await changeStream.close();
-    await client.close();
-    process.exit(0);
+  process.on("SIGINT", () => {
+    void (async () => {
+      console.log("\nShutting down gracefully...");
+      const lastResumeToken = changeStream.resumeToken;
+      await flushBatch(lastResumeToken || undefined);
+      await changeStream.close();
+      await client.close();
+      process.exit(0);
+    })();
   });
 }
 
@@ -245,4 +258,4 @@ async function main() {
   }
 }
 
-main();
+void main();
