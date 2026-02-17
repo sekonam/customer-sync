@@ -11,4 +11,3 @@ coverage
 .eslintrc*
 eslint.config.mjs
 jest*.config.ts
-tsconfig.json

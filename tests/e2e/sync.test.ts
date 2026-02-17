@@ -6,7 +6,8 @@ import { anonymizeCustomer, Customer } from "../../src/anonymizer";
 // Then: npm run test:e2e
 
 const MONGODB_URI =
-  process.env.TEST_DB_URI || "mongodb://localhost:27017/backend_test_e2e";
+  process.env.TEST_DB_URI ||
+  "mongodb://localhost:27017/backend_test_e2e?directConnection=true";
 
 describe("E2E: MongoDB Anonymization", () => {
   let client: MongoClient;
