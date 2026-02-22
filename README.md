@@ -45,18 +45,12 @@ This will start:
 
 ## Local Installation
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd backend_test
-```
-
-2. Install dependencies:
+1. Install dependencies:
 ```bash
 npm install
 ```
 
-3. Configure the database connection:
+2. Configure the database connection:
 ```bash
 cp .env.example .env
 ```
@@ -73,7 +67,7 @@ mongod --replSet rs0 --port 27017
 mongosh --eval "rs.initiate()"
 ```
 
-4. Build the project:
+3. Build the project:
 ```bash
 npm run build
 ```
