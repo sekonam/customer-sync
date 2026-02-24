@@ -134,18 +134,10 @@ async function realtimeSync(client: MongoClient): Promise<void> {
   changeStream.on("change", (change: ChangeStreamDocument<Customer>) => {
     void (async () => {
       try {
-        let customer: Customer | null = null;
-
-        if (change.operationType === "insert" && change.fullDocument) {
-          customer = change.fullDocument;
-        } else if (change.operationType === "update" && change.fullDocument) {
-          customer = change.fullDocument;
-        } else if (change.operationType === "replace" && change.fullDocument) {
-          customer = change.fullDocument;
-        }
-
-        if (customer) {
-          const anonymized = anonymizeCustomer(customer);
+        const validOperations = ["insert", "update", "replace"];
+        
+        if (validOperations.includes(change.operationType) && "fullDocument" in change && change.fullDocument) {
+          const anonymized = anonymizeCustomer(change.fullDocument);
           batch.push(anonymized);
 
           if (batch.length >= BATCH_SIZE) {
