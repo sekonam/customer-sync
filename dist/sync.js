@@ -130,18 +130,9 @@ async function realtimeSync(client) {
     changeStream.on("change", (change) => {
         void (async () => {
             try {
-                let customer = null;
-                if (change.operationType === "insert" && change.fullDocument) {
-                    customer = change.fullDocument;
-                }
-                else if (change.operationType === "update" && change.fullDocument) {
-                    customer = change.fullDocument;
-                }
-                else if (change.operationType === "replace" && change.fullDocument) {
-                    customer = change.fullDocument;
-                }
-                if (customer) {
-                    const anonymized = (0, anonymizer_1.anonymizeCustomer)(customer);
+                const validOperations = ["insert", "update", "replace"];
+                if (validOperations.includes(change.operationType) && "fullDocument" in change && change.fullDocument) {
+                    const anonymized = (0, anonymizer_1.anonymizeCustomer)(change.fullDocument);
                     batch.push(anonymized);
                     if (batch.length >= BATCH_SIZE) {
                         await flushBatch(change._id);

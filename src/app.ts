@@ -4,7 +4,7 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
-interface Customer {
+export interface Customer {
   firstName: string;
   lastName: string;
   email: string;
@@ -19,7 +19,7 @@ interface Customer {
   createdAt: Date;
 }
 
-function generateCustomer(): Customer {
+export function generateCustomer(): Customer {
   return {
     firstName: faker.person.firstName(),
     lastName: faker.person.lastName(),
@@ -72,4 +72,7 @@ async function main() {
   }
 }
 
-void main();
+// Only run main if this file is executed directly (not imported)
+if (require.main === module) {
+  void main();
+}

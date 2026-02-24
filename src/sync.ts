@@ -9,12 +9,12 @@ import { Customer, anonymizeCustomer } from "./anonymizer";
 
 dotenv.config();
 
-interface ResumeTokenDoc {
+export interface ResumeTokenDoc {
   _id: string;
   token: ResumeToken;
 }
 
-async function insertBatch(
+export async function insertBatch(
   collection: Collection<Customer>,
   batch: Customer[],
 ): Promise<void> {
@@ -37,7 +37,7 @@ async function insertBatch(
   }
 }
 
-async function fullReindex(client: MongoClient): Promise<void> {
+export async function fullReindex(client: MongoClient): Promise<void> {
   const db = client.db();
   const customersCollection = db.collection<Customer>("customers");
   const anonymisedCollection = db.collection<Customer>("customers_anonymised");
@@ -70,7 +70,7 @@ async function fullReindex(client: MongoClient): Promise<void> {
   console.log(`Full reindex completed. Processed ${processedCount} customers`);
 }
 
-async function realtimeSync(client: MongoClient): Promise<void> {
+export async function realtimeSync(client: MongoClient): Promise<void> {
   const db = client.db();
   const customersCollection = db.collection<Customer>("customers");
   const anonymisedCollection = db.collection<Customer>("customers_anonymised");
@@ -199,4 +199,7 @@ async function main() {
   }
 }
 
-void main();
+// Only run main if this file is executed directly (not imported)
+if (require.main === module) {
+  void main();
+}
