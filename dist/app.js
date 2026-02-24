@@ -33,6 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.generateCustomer = generateCustomer;
 const mongodb_1 = require("mongodb");
 const faker_1 = require("@faker-js/faker");
 const dotenv = __importStar(require("dotenv"));
@@ -82,4 +83,7 @@ async function main() {
         process.exit(1);
     }
 }
-void main();
+// Only run main if this file is executed directly (not imported)
+if (require.main === module) {
+    void main();
+}

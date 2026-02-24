@@ -5,9 +5,8 @@ npm-debug.log
 .env
 .git
 .gitignore
-tests
 coverage
 *.md
 .eslintrc*
 eslint.config.mjs
-jest*.config.ts
+# Note: tests and jest configs are NOT ignored to allow test Docker builds

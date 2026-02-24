@@ -1,0 +1,43 @@
+services:
+  mongodb-test:
+    image: mongo:7.0
+    container_name: backend_test_mongodb_e2e
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_DATABASE: backend_test
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    healthcheck:
+      test: |
+        mongosh --eval "
+          try {
+            rs.status();
+          } catch(e) {
+            rs.initiate({
+              _id: 'rs0',
+              members: [{ _id: 0, host: 'mongodb-test:27017' }]
+            });
+          }
+        "
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    tmpfs:
+      - /data/db
+
+  e2e-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: backend_test_e2e_runner
+    depends_on:
+      mongodb-test:
+        condition: service_healthy
+    environment:
+      DB_URI: mongodb://mongodb-test:27017/backend_test
+      NODE_ENV: test
+    command: ["npm", "run", "test:e2e"]
+    volumes:
+      - ./tests:/app/tests
+      - ./src:/app/src

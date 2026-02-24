@@ -154,7 +154,10 @@ export async function realtimeSync(client: MongoClient): Promise<void> {
 
   changeStream.on("error", (error) => {
     console.error("Change stream error:", error);
-    process.exit(1);
+    // Only exit if not in test mode
+    if (process.env.NODE_ENV !== "test") {
+      process.exit(1);
+    }
   });
 
   // Handle graceful shutdown

@@ -33,6 +33,9 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.insertBatch = insertBatch;
+exports.fullReindex = fullReindex;
+exports.realtimeSync = realtimeSync;
 const mongodb_1 = require("mongodb");
 const dotenv = __importStar(require("dotenv"));
 const anonymizer_1 = require("./anonymizer");
@@ -149,7 +152,10 @@ async function realtimeSync(client) {
     });
     changeStream.on("error", (error) => {
         console.error("Change stream error:", error);
-        process.exit(1);
+        // Only exit if not in test mode
+        if (process.env.NODE_ENV !== "test") {
+            process.exit(1);
+        }
     });
     // Handle graceful shutdown
     process.on("SIGINT", () => {
@@ -189,4 +195,7 @@ async function main() {
         process.exit(1);
     }
 }
-void main();
+// Only run main if this file is executed directly (not imported)
+if (require.main === module) {
+    void main();
+}

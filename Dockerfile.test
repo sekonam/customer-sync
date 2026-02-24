@@ -1,0 +1,25 @@
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY tsconfig.json ./
+COPY jest.config.ts ./
+COPY jest-e2e.config.ts ./
+
+# Install ALL dependencies (including dev dependencies for testing)
+RUN npm ci
+
+# Copy source and test files
+COPY src ./src
+COPY tests ./tests
+
+# Build TypeScript
+RUN npm run build
+
+# Set environment for testing
+ENV NODE_ENV=test
+
+# Default command runs e2e tests
+CMD ["npm", "run", "test:e2e"]
